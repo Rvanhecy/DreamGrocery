@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>梦境杂货铺 - Dream Grocery</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=ZCOOL+Styles+Regular&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --panel-color: #1e293b;
+            --accent-color: #f472b6;
+            --crystal-color: #22d3ee;
+            --valid-color: #4ade80;
+            --energy-color: #a855f7;
+            --gold-color: #fbbf24;
+            --paper-color: #fefcf0;
+            --photo-bg: #d7ccc8;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: #f1f5f9;
+            font-family: 'ZCOOL Styles Regular', 'Courier New', monospace;
+            overflow-x: hidden;
+            transition: background-color 0.5s;
+            /* 布局补丁：确保垂直居中 */
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        body.workshop-mode {
+            --bg-color: #1e1b4b; 
+            --panel-color: #312e81;
+        }
+
+        .pixel-border {
+            border: 4px solid #fff;
+            box-shadow: 0 -4px 0 0 #fff, 0 4px 0 0 #fff, -4px 0 0 0 #fff, 4px 0 0 0 #fff;
+            background: var(--panel-color);
+        }
+
+        .dream-frame {
+            background: #000;
+            position: relative;
+            overflow: hidden;
+            border: 8px solid #334155;
+            min-height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%; /* 补丁：容器宽度 */
+        }
+
+        .dream-image { width: 100%; height: 100%; object-fit: cover; transition: opacity 1s; }
+
+        .loading-spinner {
+            width: 60px; height: 60px;
+            border: 6px solid rgba(34, 211, 238, 0.2);
+            border-top: 6px solid var(--crystal-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .btn-pixel {
+            padding: 8px 16px;
+            background: #4f46e5;
+            box-shadow: -4px 4px 0 0 #312e81;
+            transition: all 0.1s;
+            cursor: pointer;
+            user-select: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-pixel:active { transform: translate(-2px, 2px); box-shadow: -2px 2px 0 0 #312e81; }
+        .btn-pixel.active { background: var(--accent-color); box-shadow: -4px 4px 0 0 #9d174d; }
+
+        .typing-input {
+            background: rgba(15, 23, 42, 0.8);
+            border-bottom: 2px solid var(--panel-color);
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        .typing-input:focus { border-bottom-color: var(--crystal-color); }
+
+        #tutorial-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.88);
+            z-index: 200;
+            display: none;
+            pointer-events: auto;
+        }
+        
+        .tutorial-highlight-element {
+            position: relative !important;
+            z-index: 250 !important;
+            pointer-events: none;
+            box-shadow: 0 0 40px var(--crystal-color) !important;
+            transition: box-shadow 0.4s;
+        }
+
+        @keyframes spotlight-glow {
+            0%, 100% { border-color: var(--crystal-color); box-shadow: 0 0 15px var(--crystal-color); }
+            50% { border-color: #fff; box-shadow: 0 0 30px #fff; }
+        }
+
+        .spotlight {
+            position: absolute;
+            border: 4px solid var(--crystal-color);
+            border-radius: 12px;
+            z-index: 249;
+            pointer-events: none;
+            transition: all 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+            animation: spotlight-glow 2s infinite ease-in-out;
+        }
+
+        .tutorial-dialog {
+            position: absolute;
+            z-index: 500; 
+            width: 320px;
+            transition: all 0.4s;
+            background: #020617 !important; 
+            border: 4px solid var(--crystal-color) !important;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.9);
+        }
+        
+        #tutorial-msg {
+            color: #ffffff !important;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            font-size: 1.1rem;
+        }
+
+        .card-polaroid {
+            background: var(--paper-color);
+            color: #1a1a1a;
+            padding: 20px;
+            padding-bottom: 25px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.8);
+            width: 90vw;
+            max-width: 400px;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            transform: rotate(-0.5deg);
+        }
+
+        .card-image-box {
+            width: 100%;
+            aspect-ratio: 1/1;
+            background: #000;
+            margin-bottom: 16px;
+            border: 1px solid #ddd;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .handwriting {
+            font-family: 'ZCOOL Styles Regular', cursive;
+            line-height: 1.5;
+            color: #2c1810;
+        }
+
+        /* 滚动条美化 */
+        .custom-scroll::-webkit-scrollbar { width: 4px; }
+        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 10px; }
+        .dark .custom-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); }
+
+        @keyframes medal-pop {
+            0% { transform: scale(0) rotate(-20deg); opacity: 0; }
+            70% { transform: scale(1.2) rotate(10deg); opacity: 1; }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+
+        .medal-unlock-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            background: rgba(0,0,0,0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+
+        .medal-unlock-overlay.show { opacity: 1; pointer-events: auto; }
+
+        .medal-card {
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            border: 4px solid var(--gold-color);
+            padding: 30px;
+            text-align: center;
+            transform: scale(0);
+            animation: medal-pop 0.6s forwards cubic-bezier(0.17, 0.67, 0.83, 0.67);
+            max-width: 300px;
+        }
+
+        @keyframes heartbeat { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); } }
+        .heart-beat { animation: heartbeat 1s infinite; display: inline-block; color: #f472b6; }
+        .notification-dot { position: absolute; top: -2px; right: -2px; width: 10px; height: 10px; background-color: #ef4444; border: 2px solid white; border-radius: 50%; }
+
+        #order-arrival-toast {
+            top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px);
+            transition: transform 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+        }
+        #order-arrival-toast.show { transform: translateX(-50%) translateY(0); }
+
+        .order-letter {
+            background-color: var(--paper-color);
+            color: #5d4037;
+            padding: 30px;
+            max-width: 420px;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 10px 10px 0 rgba(0,0,0,0.3);
+        }
+
+        .photo-frame {
+            position: relative;
+            background: white;
+            padding: 8px;
+            padding-bottom: 24px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .photo-frame:hover { transform: scale(1.05) rotate(2deg); }
+        .photo-thumb { width: 100%; aspect-ratio: 1/1; object-fit: cover; }
+    </style>
+</head>
+<body class="p-4">
+
+    <div id="intro-modal" class="fixed inset-0 z-[350] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-lg hidden">
+        <div class="pixel-border max-w-xl p-8 bg-slate-900 text-slate-100 flex flex-col items-center text-center">
+            <div class="text-6xl mb-6">👧</div>
+            <h2 class="text-2xl font-bold text-pink-400 mb-4 tracking-widest">遇见小梦</h2>
+            <div id="intro-text-container" class="space-y-4 text-lg handwriting handwriting leading-relaxed italic text-slate-300">
+                <p>“嘿，你好呀～ 我是梦境杂货铺的主理人小梦。”</p>
+                <p>“你有没有过这样的时刻？白天的烦恼像一团乱麻，夜里躺下时，心里还留着几个小小的褶皱——也许是没做完的梦，也许是想忘又忘不掉的小情绪，像乌云一样轻轻压着胸口。”</p>
+                <p>“其实呀，不只是我们，在我住的小镇上，那些可爱的小动物邻居们也有这样的褶皱。于是我开了这样一间杂货铺，用元素魔法为大家制作梦境。”</p>
+                <p>“你愿意和我一起努力，传递这份美好吗？”</p>
+            </div>
+            <button onclick="startOnboarding()" class="btn-pixel bg-pink-600 shadow-pink-900 mt-8 px-12 font-bold text-white text-lg">
+                ✨ 我愿意，小梦！
+            </button>
+        </div>
+    </div>
+
+    <div id="tutorial-overlay">
+        <div id="tutorial-spotlight" class="spotlight"></div>
+        <div id="tutorial-dialog" class="tutorial-dialog pixel-border p-6 bg-slate-900 text-white">
+            <p id="tutorial-msg" class="text-sm mb-6 handwriting italic font-bold leading-relaxed"></p>
+            <div class="flex justify-between items-center border-t border-slate-700 pt-4">
+                <button onclick="skipTutorial()" class="text-xs text-slate-400 hover:text-white transition-colors">暂时跳过</button>
+                <div class="flex gap-2">
+                    <button id="tutorial-prev-btn" onclick="prevTutorialStep()" class="btn-pixel bg-slate-600 shadow-slate-800 text-[12px] py-1 px-4 font-bold hidden">上一步</button>
+                    <button onclick="nextTutorialStep()" class="btn-pixel bg-cyan-600 shadow-cyan-900 text-[12px] py-1 px-6 font-bold">明白了！下一步</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="medal-unlock-container" class="medal-unlock-overlay">
+        <div class="medal-card pixel-border">
+            <div class="text-6xl mb-4" id="medal-unlock-icon">🚀</div>
+            <h2 class="text-xl font-bold text-amber-400 mb-2">成就达成！</h2>
+            <h3 class="text-2xl font-black text-white mb-4" id="medal-unlock-name">勋章名称</h3>
+            <p class="text-xs text-slate-400 italic mb-6" id="medal-unlock-reward">奖励内容</p>
+            <button onclick="dismissMedal()" class="btn-pixel bg-amber-600 shadow-amber-900 font-bold w-full">收下这份荣誉</button>
+        </div>
+    </div>
+
+    <div id="order-arrival-toast" class="fixed z-[90] pixel-border bg-slate-800 px-6 py-2 flex items-center gap-3 pointer-events-none">
+        <span class="heart-beat">❤️</span>
+        <span class="text-sm text-white">叮咚！一位新顾客正在门口等待...</span>
+    </div>
+
+    <div class="w-full max-w-6xl flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+        <div class="pixel-border px-6 py-2">
+            <h1 class="text-2xl font-bold tracking-tighter">🏪 梦境杂货铺</h1>
+        </div>
+        
+        <div class="mode-nav flex gap-3 p-2 bg-black/20 rounded-lg pixel-border">
+            <button onclick="switchGameMode('shop')" id="nav-shop" class="btn-pixel active text-xs">🛒 经营模式</button>
+            <button onclick="toggleMemoryBox()" id="nav-memory" class="btn-pixel text-xs bg-rose-600 shadow-rose-900">📮 暖心匣子</button>
+            <button onclick="switchGameMode('workshop')" id="nav-workshop" class="btn-pixel text-xs">🛠️ 创意工坊</button>
+        </div>
+
+        <div class="flex gap-4 items-center">
+            <button onclick="toggleMedalWall()" id="nav-medals" class="btn-pixel bg-indigo-600 shadow-indigo-900 font-bold">🏆 荣誉</button>
+            <button onclick="toggleEncy()" id="nav-ency" class="btn-pixel bg-amber-600 shadow-amber-900 font-bold">📖 百科</button>
+            <div id="crystal-box" class="pixel-border px-4 py-2 text-cyan-400 font-bold min-w-[100px] text-center">
+                💎 <span id="crystal-count">0</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 w-full max-w-6xl">
+        
+        <div class="lg:col-span-4 flex flex-col gap-4">
+            <div id="order-panel" class="pixel-border p-6 flex-1 relative overflow-hidden">
+                <div id="shop-left-header" class="flex justify-between items-center mb-4 border-b border-pink-900/50 pb-2">
+                    <h3 class="text-pink-400 flex items-center gap-2">
+                        📋 委托信
+                        <span id="order-heart-signal" class="heart-beat hidden text-xs">❤️</span>
+                    </h3>
+                    <button id="order-letter-btn" onclick="showOrderLetter()" class="relative text-amber-400 hover:text-amber-300">
+                        <span class="text-2xl">💌</span>
+                        <div id="order-unread-dot" class="notification-dot hidden"></div>
+                    </button>
+                </div>
+                
+                <div id="order-content">
+                    <div id="order-box" class="min-h-[100px] italic text-slate-300 leading-relaxed text-lg font-light">正在等待新的思念...</div>
+                    <div class="mt-4">
+                        <p class="text-xs text-slate-500 mb-2 uppercase font-bold tracking-tighter">Dream Key / 核心关键词</p>
+                        <div id="target-tags" class="flex flex-wrap gap-2"></div>
+                    </div>
+                </div>
+
+                <div id="workshop-left" class="hidden h-full flex flex-col gap-4">
+                    <h3 class="text-indigo-400 border-b border-indigo-900/50 pb-2 font-bold flex items-center gap-2">📓 灵感手账</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="text-[10px] text-slate-500 font-bold uppercase tracking-widest block mb-2">Dream Title / 梦境命题</label>
+                            <input type="text" id="ws-dream-title" class="w-full bg-slate-900 border-b border-indigo-500 p-2 text-sm focus:outline-none" placeholder="给你的梦取个名字...">
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-slate-500 font-bold uppercase tracking-widest block mb-2">Inspiration Source / 灵感来源</label>
+                            <textarea id="ws-personal-note" class="w-full bg-slate-900 border border-slate-700 p-2 text-sm rounded focus:border-indigo-500 focus:outline-none" rows="6" placeholder="此时此刻，你脑海中浮现了什么？"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="materials-panel" class="pixel-border p-4 bg-slate-900/50">
+                <div class="flex justify-between items-center mb-2 text-xs">
+                    <h3 class="text-slate-400 uppercase font-bold">Materials / 素材库</h3>
+                    <span class="text-slate-500"><span id="slot-indicator">0</span> Slots Selected</span>
+                </div>
+                <div id="unlocked-list" class="flex flex-wrap gap-1 max-h-32 overflow-y-auto pr-1"></div>
+            </div>
+        </div>
+
+        <div class="lg:col-span-8 flex flex-col gap-4">
+            <div id="viewport" class="pixel-border dream-frame">
+                <div id="empty-view" class="text-center p-8 opacity-40">
+                    <p id="empty-msg" class="mb-4 text-xl font-light">“把现实关在门外，开始造梦吧。”</p>
+                    <div class="text-8xl">🔮</div>
+                </div>
+
+                <div id="loading-view" class="hidden flex-col items-center">
+                    <div class="loading-spinner mb-4"></div>
+                    <p id="loading-msg" class="text-cyan-400 animate-pulse tracking-widest text-sm">正在链接意识深处...</p>
+                </div>
+
+                <img id="dream-img" class="dream-image hidden" alt="Vision">
+
+                <div id="report-view" class="absolute inset-0 bg-slate-950/95 hidden flex-col items-center justify-center p-4 text-center z-30 backdrop-blur-md">
+                    <h2 id="report-dream-title" class="text-2xl font-bold text-amber-200 mb-2 tracking-tighter flex-shrink-0">《梦境名称》</h2>
+                    
+                    <div class="w-full max-w-lg overflow-y-auto pr-2 mb-4 custom-scroll" style="max-height: 78%;">
+                        <div class="space-y-3">
+                            <div id="customer-feedback-box" class="bg-slate-900/90 p-4 rounded-lg border border-slate-700 text-left shadow-lg relative group">
+                                <p class="text-[10px] text-pink-400 font-bold mb-2 uppercase tracking-widest font-mono flex justify-between">
+                                    Guest Feedback / 顾客反馈
+                                    <button onclick="speakText('customer-story')" class="opacity-0 group-hover:opacity-100 transition-opacity text-pink-400">🔊</button>
+                                </p>
+                                <p id="customer-story" class="text-sm text-slate-100 italic handwriting leading-relaxed"></p>
+                            </div>
+                            <div class="bg-slate-900/90 p-4 rounded-lg border border-slate-700 text-left shadow-lg relative group">
+                                <p id="note-label" class="text-[10px] text-cyan-400 font-bold mb-2 uppercase tracking-widest font-mono flex justify-between">
+                                    Inspiration Journal / 灵感手账
+                                    <button onclick="speakText('manager-note')" class="opacity-0 group-hover:opacity-100 transition-opacity text-cyan-400">🔊</button>
+                                </p>
+                                <p id="manager-note" class="text-sm text-slate-200 italic handwriting leading-relaxed"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-4 flex-shrink-0 mb-2">
+                        <button onclick="showShareCard()" class="btn-pixel bg-pink-600 shadow-pink-900 px-8 font-bold text-xs uppercase">Postcard / 明信片</button>
+                        <button id="finish-btn" onclick="nextCustomer()" class="btn-pixel bg-slate-700 shadow-slate-900 px-8 font-bold text-xs uppercase">Next / 继续</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="input-container" class="pixel-border p-4 relative z-10">
+                <div class="flex gap-4 items-end mb-3">
+                    <div class="flex-1">
+                        <input type="text" id="keyword-input" 
+                               autocomplete="off" spellcheck="false"
+                               placeholder="选择下方素材关键词，空格分隔..." 
+                               class="w-full typing-input py-3 px-3 text-xl text-white">
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <button id="inspire-btn" onclick="getAIInspiration()" class="btn-pixel bg-amber-600 shadow-amber-900 text-[10px] py-1">✨ 灵感</button>
+                        <button id="weave-btn" onclick="startWeave()" class="btn-pixel bg-indigo-600 shadow-indigo-900 font-bold">🪄 开启创作</button>
+                    </div>
+                </div>
+                <div id="feedback-area" class="flex flex-wrap gap-2 min-h-[28px] items-center text-[10px] text-slate-500 italic">
+                    正在寻找合适的梦境契机...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="medal-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/80">
+        <div class="pixel-border w-full max-w-4xl max-h-[80vh] flex flex-col bg-slate-900">
+            <div class="p-6 border-b border-slate-700 flex justify-between items-center">
+                <h2 class="text-2xl font-bold text-indigo-400">🏆 荣誉殿堂</h2>
+                <button onclick="toggleMedalWall()" class="text-slate-400 font-bold">✕ 关闭</button>
+            </div>
+            <div id="medal-wall-view" class="p-8 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6"></div>
+        </div>
+    </div>
+
+    <div id="letter-modal" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+        <div class="flex flex-col items-center">
+            <div class="order-letter handwriting pixel-border flex flex-col shadow-2xl relative">
+                <button onclick="speakText('letter-body', 'Kore')" class="absolute top-6 right-6 text-2xl text-stone-400 hover:text-stone-800 transition-colors">🔊</button>
+                <div class="flex justify-between items-start mb-8">
+                    <div class="text-2xl font-bold text-stone-800">致 杂货铺主人：</div>
+                    <div class="text-5xl opacity-10">✉️</div>
+                </div>
+                <div id="letter-body" class="flex-1 text-base leading-relaxed text-stone-700"></div>
+                <div class="text-right mt-10">
+                    <p class="text-xs opacity-50 font-bold uppercase">Requester</p>
+                    <p id="letter-sender" class="font-bold text-xl text-stone-900 border-b-2 border-stone-400 inline-block"></p>
+                </div>
+            </div>
+            <button onclick="closeLetter()" class="btn-pixel bg-stone-800 shadow-black mt-8 px-16 font-bold text-white">收回委托信</button>
+        </div>
+    </div>
+
+    <div id="memory-modal" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+        <div class="pixel-border w-full max-w-5xl max-h-[85vh] flex flex-col bg-slate-900">
+            <div class="p-6 border-b border-slate-700 flex flex-col md:flex-row justify-between items-center gap-4">
+                <h2 class="text-2xl font-bold text-rose-400 flex items-center gap-2">
+                    <span>📮</span> 暖心匣子 <small class="text-xs font-normal opacity-50 uppercase tracking-widest">Memory Album</small>
+                </h2>
+                <div class="flex gap-2">
+                    <button onclick="toggleMemoryBox()" class="btn-pixel text-[9px] bg-slate-700 ml-4 font-bold">✕ 关闭</button>
+                </div>
+            </div>
+            <div id="memory-empty" class="p-24 text-center opacity-30 flex-1">
+                <div class="text-6xl mb-4">📦</div>
+                <p class="text-xl font-light italic text-white">回忆册还在等待填充...</p>
+            </div>
+            <div id="memory-content" class="p-8 overflow-y-auto flex-1 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-10 hidden"></div>
+        </div>
+    </div>
+
+    <div id="share-modal" class="fixed inset-0 z-[80] hidden flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl">
+        <div class="flex flex-col items-center w-full h-full justify-center">
+            <div class="card-polaroid pixel-border" id="capture-card">
+                <div class="card-image-box">
+                    <img id="share-img" class="w-full h-full object-cover" src="" alt="Dream">
+                </div>
+                <div class="flex-1 overflow-y-auto pr-2 custom-scroll mb-2">
+                    <h3 id="card-title" class="text-xl font-bold mb-2 tracking-tighter text-stone-900 underline decoration-pink-300">《梦境》</h3>
+                    <p id="card-story" class="text-[12px] text-stone-800 italic handwriting leading-relaxed"></p>
+                </div>
+                <div class="flex justify-between items-end border-t border-stone-200 pt-3 flex-shrink-0">
+                    <div class="text-[9px] text-stone-400 font-bold uppercase tracking-tight font-mono">Dream Grocery Store<br>Collection #<span id="dream-id">0000</span></div>
+                    <div id="card-tag-ui" class="text-[10px] text-stone-500 italic font-bold">“愿世界温柔如初”</div>
+                </div>
+            </div>
+            <div class="mt-6 flex gap-6 flex-shrink-0">
+                <button onclick="closeShare()" class="btn-pixel bg-slate-800 px-10">✕ 离开</button>
+                <button onclick="saveCard()" class="btn-pixel bg-rose-600 px-10 font-bold text-white shadow-rose-950">💾 珍藏明信片</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="ency-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/80">
+        <div class="pixel-border w-full max-w-4xl max-h-[80vh] flex flex-col bg-slate-900">
+            <div class="p-6 border-b border-slate-700 flex justify-between items-center">
+                <h2 class="text-2xl font-bold text-amber-400">📖 梦境素材百科</h2>
+                <button onclick="toggleEncy()" class="text-slate-400 font-bold">✕ 关闭</button>
+            </div>
+            <div id="library-view" class="p-6 overflow-y-auto grid grid-cols-2 md:grid-cols-4 gap-4"></div>
+            <div class="p-4 bg-black/20 flex justify-between items-center text-xs font-bold px-6">
+                <span class="text-cyan-400">持有梦晶: 💎 <span id="modal-crystals">0</span></span>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="fixed bottom-8 bg-white text-black px-8 py-3 pixel-border opacity-0 pointer-events-none transition-all z-[600] font-bold shadow-2xl"></div>
+
+    <script>
+        const apiKey = "AIzaSyBXEGL7CMj4W7lRQE7bRSMzN3qW8F9sNiU";
+
+        const gameState = {
+            crystals: 350,
+            unlocked: ['云朵', '繁星', '猫咪', '萤火虫'],
+            medals: { 
+                'crossDomain': false, 'contrast': false, 'soul': false, 'minimalist': false,
+                'dragonRider': false, 'cozyCorner': false, 'cosmosVoyager': false,
+                'deepExplorer': false, 'sweetDream': false, 'timeTraveler': false
+            },
+            gameMode: 'shop',
+            pastDreams: [], 
+            isGenerating: false,
+            currentOrder: null,
+            lastResult: null,
+            orderIsRead: true,
+            sortMode: 'time',
+            tutorialStep: 0,
+            library: {
+                '云朵': { icon: '☁️', type: 'nature', size: 'huge', price: 0 },
+                '繁星': { icon: '⭐', type: 'nature', size: 'small', price: 0 },
+                '猫咪': { icon: '🐱', type: 'creature', size: 'small', price: 0 },
+                '萤火虫': { icon: '✨', type: 'creature', size: 'small', price: 0 },
+                '鲸鱼': { icon: '🐋', type: 'creature', size: 'huge', price: 50 },
+                '深海': { icon: '🌊', type: 'nature', size: 'huge', price: 40 },
+                '棉花糖船': { icon: '⛵', type: 'artifact', size: 'huge', price: 50 },
+                '糖果山': { icon: '⛰️', type: 'nature', size: 'huge', price: 40 },
+                '时钟': { icon: '⏰', type: 'artifact', size: 'small', price: 60 },
+                '月亮秋千': { icon: '🌙', type: 'artifact', size: 'huge', price: 80 },
+                '蝴蝶': { icon: '🦋', type: 'creature', size: 'small', price: 40 },
+                '极光': { icon: '🌈', type: 'nature', size: 'huge', price: 70 },
+                '龙': { icon: '🐉', type: 'creature', size: 'huge', price: 150 },
+                '星球': { icon: '🪐', type: 'nature', size: 'huge', price: 90 },
+                '流星': { icon: '☄️', type: 'nature', size: 'small', price: 65 },
+                '悬浮岛': { icon: '🏝️', type: 'nature', size: 'huge', price: 110 },
+                '书本': { icon: '📖', type: 'artifact', size: 'small', price: 35 },
+                '茶杯': { icon: '☕', type: 'artifact', size: 'small', price: 25 },
+                '魔法棒': { icon: '🪄', type: 'artifact', size: 'small', price: 75 },
+                '灯笼': { icon: '🏮', type: 'artifact', size: 'small', price: 45 },
+                '蘑菇': { icon: '🍄', type: 'nature', size: 'small', price: 20 },
+                '独角兽': { icon: '🦄', type: 'creature', size: 'huge', price: 130 },
+                '水晶球': { icon: '🔮', type: 'artifact', size: 'small', price: 85 },
+                '彩虹桥': { icon: '🌉', type: 'nature', size: 'huge', price: 100, isHidden: true }
+            }
+        };
+
+        const medalDefs = {
+            'crossDomain': { name: '跨域探险家', condition: '在梦中融合自然与造物', reward: '解锁隐藏素材：彩虹桥', icon: '🚀' },
+            'contrast': { name: '反差大师', condition: '同时使用巨大与微小的素材', reward: '奖励：50 梦晶', icon: '🔍' },
+            'soul': { name: '心灵捕手', condition: '赋予无机物以生命气息', reward: '奖励：30 梦晶', icon: '💖' },
+            'minimalist': { name: '极简主义者', condition: '用极简元素(≤2个)获得高评分', reward: '奖励：40 梦晶', icon: '⚪' },
+            'dragonRider': { name: '龙骑士', condition: '让传说中的龙出现在梦境里', reward: '奖励：60 梦晶', icon: '🐉' },
+            'cozyCorner': { name: '午后角落', condition: '同时使用书本与茶杯', reward: '奖励：30 梦晶', icon: '🛋️' },
+            'cosmosVoyager': { name: '星际旅客', condition: '探索星球与流星的宇宙奥秘', reward: '奖励：80 梦晶', icon: '👨‍🚀' },
+            'deepExplorer': { name: '深海探险家', condition: '在深海中与鲸鱼共舞', reward: '奖励：50 梦晶', icon: '🔱' },
+            'sweetDream': { name: '甜甜好梦', condition: '棉花糖船停靠在糖果山旁', reward: '奖励：40 梦晶', icon: '🍬' },
+            'treatTraveler': { name: '时空旅人', condition: '将时钟带到遥远的星球', reward: '奖励：70 梦晶', icon: '⏳' }
+        };
+
+        const customersList = [
+            { name: "忧郁的小猫", text: "我最近总是失眠，能不能帮我做一个有着软绵绵云朵和萤火虫的梦？我想在星光下打个盹。", targets: ["云朵", "萤火虫"] },
+            { name: "远方的长颈鹿", text: "我住在干旱的草原，好久没见过海洋了。我梦见极光在深海上跳舞，那一定很壮观吧？", targets: ["极光", "深海"] },
+            { name: "迷路的小松鼠", text: "我在森林里弄丢了最爱的松果。我想要一个有着巨大糖果山和月亮秋千的梦。", targets: ["糖果山", "月亮秋千"] },
+            { name: "老时钟匠", text: "时间滴答走了一辈子。我想要一个时钟停摆、只有鲸鱼游过的寂静深海之梦。", targets: ["时钟", "鲸鱼"] },
+            { name: "小白兔勇者", text: "我想变强大！我想梦见自己骑在巨龙背上，手里握着闪闪发光的魔法棒，飞过每一片云彩。", targets: ["龙", "魔法棒", "云朵"] },
+            { name: "星际小狐狸", text: "我迷路掉到了地球。我想梦见我回到了遥远的星球，看着流星划过夜空，还有我的繁星朋友们。", targets: ["星球", "流星", "繁星"] },
+            { name: "失眠的猫头鹰", text: "森林里的夜太吵了。我想要一个有着温暖灯笼的小屋，坐在月亮秋千上，闻着茶香读一本厚厚的话。", targets: ["灯笼", "月亮秋千", "茶杯", "书本"] },
+            { name: "梦想飞翔的小猪", text: "虽然我没有翅膀，但我梦见过悬浮在空中的岛屿。在那里，云朵可以当枕头，我可以在彩虹桥上赛跑。", targets: ["悬浮岛", "云朵", "彩虹桥"] },
+            { name: "森林小鹿", text: "我想念传说中的神秘山谷。梦里一定要有闪闪发光的蘑菇，还有传说中银色长角的独角兽。", targets: ["蘑菇", "独角兽"] },
+            { name: "流浪诗人", text: "我的灵感枯竭了。请给我一个装满极光的梦，让我在水晶球里寻找真理，伴着墨香书写新的诗篇。", targets: ["极光", "水晶球", "书本"] }
+        ];
+
+        const tutorialSteps = [
+            { elementId: 'nav-shop', msg: "这里是【经营模式】，通过完成邻居们的订单来收集梦晶，是杂货铺的核心玩法。" },
+            { elementId: 'nav-memory', msg: "这是【暖心匣子】，珍藏着每一份曾经编织出的美丽梦境明信片，记录着你的创作足迹。" },
+            { elementId: 'nav-workshop', msg: "这里是全新的【创意工坊】，没有订单束缚，你可以完全按照自己的心意自由造梦并永久珍藏。" },
+            { elementId: 'order-panel', msg: "【委托信】栏目会展示居民们的思念之信，点击信封阅读故事，了解他们的梦境需求。" },
+            { elementId: 'materials-panel', msg: "【素材库】里存放着你拥有的梦境种子，点击它们即可放入输入框，每一个都是构成幻境的魔法元素。" },
+            { elementId: 'viewport', msg: "【造梦台】是奇迹发生的地方，你编织的画面将在这里通过AI的魔力跃然纸上。" },
+            { elementId: 'nav-medals', msg: "在【荣誉】殿堂，你作为梦境织网者所达成的每一个里程碑都将被永久铭刻。" },
+            { elementId: 'nav-ency', msg: "走进【百科】，你可以用积累的梦晶换取更多神奇的新奇种子，丰富你的创作色彩。" },
+            { elementId: 'crystal-box', msg: "最后是【梦晶】，它是杂货铺的能量来源，通过完成高质量的梦境委托来获得它吧。" }
+        ];
+
+        // --- UI Utils ---
+        function showToast(m) { const t = document.getElementById('toast'); if(t) { t.innerText = m; t.style.opacity = '1'; setTimeout(()=>t.style.opacity = '0', 2500); } }
+
+        function updateUI() {
+            const crystalEl = document.getElementById('crystal-count');
+            if (crystalEl) crystalEl.innerText = gameState.crystals;
+
+            const listEl = document.getElementById('unlocked-list');
+            if (listEl) {
+                listEl.innerHTML = gameState.unlocked
+                    .map(k => `<span onclick="addKeyword('${k}')" class="px-2 py-0.5 bg-slate-800 text-[10px] rounded border border-slate-700 font-bold cursor-pointer hover:border-cyan-400 select-none">${gameState.library[k].icon} ${k}</span>`).join('');
+            }
+
+            const heartSignal = document.getElementById('order-heart-signal');
+            if (heartSignal) heartSignal.classList.toggle('hidden', gameState.orderIsRead);
+
+            const unreadDot = document.getElementById('order-unread-dot');
+            if (unreadDot) unreadDot.classList.toggle('hidden', gameState.orderIsRead);
+        }
+
+        function addKeyword(k) {
+            const input = document.getElementById('keyword-input');
+            if(!input) return;
+            const current = input.value.trim();
+            if (current.includes(k)) return;
+            input.value = current ? current + " " + k : k;
+            const indicator = document.getElementById('slot-indicator');
+            if(indicator) indicator.innerText = input.value.trim().split(/\s+/).length;
+        }
+
+        function resetViewport() {
+            const ev = document.getElementById('empty-view');
+            const lv = document.getElementById('loading-view');
+            const di = document.getElementById('dream-img');
+            const rv = document.getElementById('report-view');
+            const ki = document.getElementById('keyword-input');
+            const si = document.getElementById('slot-indicator');
+            
+            const wdt = document.getElementById('ws-dream-title');
+            const wpn = document.getElementById('ws-personal-note');
+
+            if(ev) ev.classList.remove('hidden');
+            if(lv) lv.classList.add('hidden');
+            if(di) di.classList.add('hidden');
+            if(rv) rv.classList.add('hidden');
+            if(ki) ki.value = "";
+            if(si) si.innerText = '0';
+            
+            if(wdt) wdt.value = "";
+            if(wpn) wpn.value = "";
+        }
+
+        // --- AI Bridge ---
+        async function geminiText(prompt, systemInstruction = "") {
+            // 指向 Gemini 1.5 Flash 确保稳定性
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }],
+                systemInstruction: { parts: [{ text: systemInstruction }] }
+            };
+            let retries = 0;
+            while (retries < 5) {
+                try {
+                    const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                    const data = await response.json();
+                    return data.candidates?.[0]?.content?.parts?.[0]?.text;
+                } catch (e) {
+                    retries++;
+                    await new Promise(r => setTimeout(r, Math.pow(2, retries) * 1000));
+                }
+            }
+            throw new Error("Gemini API Error");
+        }
+
+        async function geminiTTS(text, voice = "Kore") {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-preview-tts:generateContent?key=${apiKey}`;
+            const payload = {
+                contents: [{ parts: [{ text: `Say gently and emotionally in Chinese: ${text}` }] }],
+                generationConfig: {
+                    responseModalities: ["AUDIO"],
+                    speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voice } } }
+                }
+            };
+            try {
+                const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                const data = await response.json();
+                const base64 = data.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+                if (!base64) return;
+                const audioBuffer = base64ToUint8Array(base64);
+                const wavBuffer = encodeWAV(audioBuffer, 24000);
+                const blob = new Blob([wavBuffer], { type: 'audio/wav' });
+                const audioUrl = URL.createObjectURL(blob);
+                const audio = new Audio(audioUrl);
+                audio.play();
+            } catch (e) { console.error(e); }
+        }
+
+        function base64ToUint8Array(base64) {
+            const binaryString = window.atob(base64);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
+            return bytes;
+        }
+
+        function encodeWAV(samples, sampleRate) {
+            const buffer = new ArrayBuffer(44 + samples.length);
+            const view = new DataView(buffer);
+            view.setUint32(0, 0x46464952, true); view.setUint32(4, 36 + samples.length, true); view.setUint32(8, 0x45564157, true); view.setUint32(12, 0x20746d66, true); view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, 1, true); view.setUint32(24, sampleRate, true); view.setUint32(28, sampleRate * 2, true); view.setUint16(32, 2, true); view.setUint16(34, 16, true); view.setUint32(36, 0x61746164, true); view.setUint32(40, samples.length, true);
+            for (let i = 0; i < samples.length; i++) view.setUint8(44 + i, samples[i]);
+            return buffer;
+        }
+
+        // --- Game Core ---
+        function createOrder() {
+            const choice = customersList[Math.floor(Math.random()*customersList.length)];
+            gameState.currentOrder = choice;
+            gameState.orderIsRead = false;
+            const box = document.getElementById('order-box');
+            if(box) box.innerText = `【${choice.name}】寄来了一封思念之信。`;
+            const tags = document.getElementById('target-tags');
+            if(tags) tags.innerHTML = choice.targets.map(t => `<span class="px-2 py-1 bg-slate-800 text-[10px] rounded border border-slate-700 font-bold">${t}</span>`).join('');
+            updateUI();
+        }
+
+        async function getAIInspiration() {
+            const btn = document.getElementById('inspire-btn');
+            if(!btn) return;
+            btn.innerText = "✨ 思考中..."; btn.disabled = true;
+            try {
+                let prompt = "";
+                if(gameState.gameMode === 'shop') {
+                    prompt = `顾客：${gameState.currentOrder.name}，要求：${gameState.currentOrder.text}。素材库：${gameState.unlocked.join('、')}。挑选2-3个，空格分隔返回，不要废话。`;
+                } else {
+                    prompt = `现在是创意工坊自由模式。我的素材库有：${gameState.unlocked.join('、')}。请给我推荐一个极具诗意或奇幻感的3个素材组合。直接返回空格分隔词。`;
+                }
+                const suggestion = await geminiText(prompt, "梦境杂货铺建议员。");
+                const input = document.getElementById('keyword-input');
+                if(input) input.value = suggestion.trim();
+                showToast("灵感火花已降临！");
+            } catch (e) { showToast("灵感中断了..."); }
+            finally { btn.innerText = "✨ 灵感"; btn.disabled = false; }
+        }
+
+        async function speakText(id, voice = "Kore") {
+            const el = document.getElementById(id);
+            if(!el) return;
+            const text = el.innerText;
+            if (!text) return;
+            showToast("正在通过魔法回响...");
+            await geminiTTS(text, voice);
+        }
+
+        async function calculateAIScore(userWords) {
+            const types = userWords.map(w => gameState.library[w].type);
+            const sizes = userWords.map(w => gameState.library[w].size);
+            let prompt = "";
+            
+            let sysPrompt = `你是一位极具想象力的梦境主理人。
+            在书写反馈时，请参考以下原则：
+            - 经营模式下：
+                1. 顾客反馈：第一人称叙事，感性且长篇，描述梦中的慰藉。
+                2. 主理人随笔：作为观察者，记录顾客的故事和你的祝福。
+            - 创意工坊模式下（私人灵感手账）：
+                1. 禁止提及任何“邻居”、“顾客”、“订单”或“经营”。
+                2. 叙事视角：纯粹的“自我意识”。描述你进行梦境实验时的内心波动，对美学的私人见解，或创作时的幻觉。
+                3. 内容：这些文字是你写给自己的秘密日记，关于你如何通过这些素材探索意识深处的荒原。
+                4. 称称呼：只能自称“我”。
+            - 标题：纯文字，绝不要带任何书名号。
+            - 禁止：不要使用‘反映了...’、‘象征着...’等刻板的学术分析词汇。`;
+
+            if (gameState.gameMode === 'shop') {
+                prompt = `梦境委托人：${gameState.currentOrder.name}（诉求：${gameState.currentOrder.text}）。使用的素材：${userWords.join('、')}。
+                请以此编织一段治愈长文案。
+                返回格式：{"title": "标题", "customer_feedback": "长篇感性第一人称反馈", "manager_note": "主理人随笔(观察与祝福) "}`;
+            } else {
+                const customTitle = document.getElementById('ws-dream-title').value || "灵感碎片";
+                const customPersonalNote = document.getElementById('ws-personal-note').value || "我只是想看看这些碎片拼凑在一起的样子。";
+                prompt = `这是一次私人的梦境织造实验。标题：${customTitle}。我的原始灵感：${customPersonalNote}。素材：${userWords.join('、')}。
+                请为我写一份私密的“灵感手账”，记录我此刻内心的艺术独白。
+                返回JSON: {"title": "${customTitle}", "manager_note": "纯粹的自我艺术随笔/独白(字数150-200字)"}`;
+            }
+
+            try {
+                const resultText = await geminiText(prompt, sysPrompt);
+                const result = JSON.parse(resultText.replace(/```json|```/g, ""));
+                let score = 0;
+                
+                const safeTitle = (result.title || "未命名的梦").replace(/[《》]/g, "");
+
+                if (gameState.gameMode === 'shop') {
+                    score = 80 + Math.floor(Math.random()*20);
+                    gameState.crystals += score;
+                    checkMedals(userWords, types, sizes, score);
+                }
+                gameState.lastResult = {
+                    imageUrl: document.getElementById('dream-img').src,
+                    title: safeTitle,
+                    quote: gameState.gameMode === 'shop' ? `“${result.customer_feedback}”` : result.manager_note,
+                    note: result.manager_note,
+                    score: score,
+                    isWorkshop: gameState.gameMode === 'workshop',
+                    id: Math.floor(Math.random()*9000)+1000,
+                    timestamp: Date.now()
+                };
+                gameState.pastDreams.unshift({...gameState.lastResult});
+                
+                const rTitle = document.getElementById('report-dream-title');
+                if(rTitle) rTitle.innerText = `《${safeTitle}》`;
+                
+                const cfBox = document.getElementById('customer-feedback-box');
+                const cStory = document.getElementById('customer-story');
+                const noteLabel = document.getElementById('note-label');
+
+                if (gameState.gameMode === 'shop') {
+                    if(cfBox) cfBox.classList.remove('hidden');
+                    if(cStory) cStory.innerText = `“${result.customer_feedback}”`;
+                    if(noteLabel) noteLabel.innerText = "Manager's Note / 主理人随笔";
+                } else {
+                    if(cfBox) cfBox.classList.add('hidden');
+                    if(noteLabel) noteLabel.innerText = "Inspiration Journal / 灵感手账";
+                }
+                const mNote = document.getElementById('manager-note');
+                if(mNote) mNote.innerText = result.manager_note;
+                
+                updateUI();
+                const rView = document.getElementById('report-view');
+                if(rView) { rView.classList.remove('hidden'); rView.classList.add('flex'); }
+            } catch (e) { calculateStaticScore(userWords); }
+        }
+
+        function checkMedals(userWords, types, sizes, score) {
+            const unlockedNewMedals = [];
+            if (!gameState.medals.crossDomain && types.includes('nature') && types.includes('artifact')) { gameState.medals.crossDomain = true; gameState.unlocked.push('彩虹桥'); unlockedNewMedals.push('crossDomain'); }
+            if (!gameState.medals.contrast && sizes.includes('huge') && sizes.includes('small')) { gameState.medals.contrast = true; gameState.crystals += 50; unlockedNewMedals.push('contrast'); }
+            if (!gameState.medals.soul && types.includes('creature') && types.includes('artifact')) { gameState.medals.soul = true; gameState.crystals += 30; unlockedNewMedals.push('soul'); }
+            if (!gameState.medals.minimalist && userWords.length <= 2 && score >= 90) { gameState.medals.minimalist = true; gameState.crystals += 40; unlockedNewMedals.push('minimalist'); }
+            if (!gameState.medals.dragonRider && userWords.includes('龙')) { gameState.medals.dragonRider = true; gameState.crystals += 60; unlockedNewMedals.push('dragonRider'); }
+            if (!gameState.medals.cozyCorner && userWords.includes('书本') && userWords.includes('茶杯')) { gameState.medals.cozyCorner = true; gameState.crystals += 30; unlockedNewMedals.push('soul'); }
+            if (!gameState.medals.cosmosVoyager && userWords.includes('星球') && userWords.includes('流星')) { gameState.medals.cosmosVoyager = true; gameState.crystals += 80; unlockedNewMedals.push('cosmosVoyager'); }
+            if (!gameState.medals.deepExplorer && userWords.includes('深海') && userWords.includes('鲸鱼')) { gameState.medals.deepExplorer = true; gameState.crystals += 50; unlockedNewMedals.push('deepExplorer'); }
+            if (!gameState.medals.sweetDream && userWords.includes('棉花糖船') && userWords.includes('糖果山')) { gameState.medals.sweetDream = true; gameState.crystals += 40; unlockedNewMedals.push('sweetDream'); }
+            if (!gameState.medals.timeTraveler && userWords.includes('时钟') && userWords.includes('星球')) { gameState.medals.timeTraveler = true; gameState.crystals += 70; unlockedNewMedals.push('timeTraveler'); }
+            if (unlockedNewMedals.length > 0) setTimeout(() => showMedalUnlockAnimation(unlockedNewMedals[0]), 500);
+        }
+
+        function switchGameMode(m) {
+            gameState.gameMode = m;
+            document.body.classList.toggle('workshop-mode', m === 'workshop');
+            document.querySelectorAll('.mode-nav button').forEach(b => b.classList.remove('active'));
+            const btn = document.getElementById(`nav-${m}`);
+            if(btn) btn.classList.add('active');
+            if (m === 'workshop') {
+                const oc = document.getElementById('order-content');
+                const slh = document.getElementById('shop-left-header');
+                const wl = document.getElementById('workshop-left');
+                const wb = document.getElementById('weave-btn');
+                if(oc) oc.classList.add('hidden');
+                if(slh) slh.classList.add('hidden');
+                if(wl) wl.classList.remove('hidden');
+                if(wb) wb.innerText = "🪄 开启杰作";
+                const em = document.getElementById('empty-msg');
+                if(em) em.innerText = "“在这里，随心所欲地挥洒你的灵感吧。”";
+            } else {
+                const oc = document.getElementById('order-content');
+                const slh = document.getElementById('shop-left-header');
+                const wl = document.getElementById('workshop-left');
+                const wb = document.getElementById('weave-btn');
+                if(oc) oc.classList.remove('hidden');
+                if(slh) slh.classList.remove('hidden');
+                if(wl) wl.classList.add('hidden');
+                if(wb) wb.innerText = "🪄 编织梦境";
+                const em = document.getElementById('empty-msg');
+                if(em) em.innerText = "“把现实关在门外，开始造梦吧。”";
+                createOrder();
+            }
+            resetViewport();
+        }
+
+        function nextCustomer() { 
+            resetViewport(); 
+            if(gameState.gameMode === 'shop') {
+                createOrder(); 
+            }
+        }
+
+        // --- Tutorial ---
+        function checkIntro() {
+            const visited = localStorage.getItem('pixel_dream_shop_visited_v15');
+            if (!visited) {
+                const modal = document.getElementById('intro-modal');
+                if(modal) modal.classList.remove('hidden');
+            } else { switchGameMode('shop'); }
+        }
+
+        function startOnboarding() {
+            const modal = document.getElementById('intro-modal');
+            if(modal) modal.classList.add('hidden');
+            const overlay = document.getElementById('tutorial-overlay');
+            if(overlay) overlay.style.display = 'block';
+            gameState.tutorialStep = 0;
+            showTutorialStep();
+        }
+
+        function showTutorialStep() {
+            document.querySelectorAll('.tutorial-highlight-element').forEach(el => el.classList.remove('tutorial-highlight-element'));
+            const step = tutorialSteps[gameState.tutorialStep];
+            const el = document.getElementById(step.elementId);
+            if(!el) return;
+            el.classList.add('tutorial-highlight-element');
+            const spotlight = document.getElementById('tutorial-spotlight');
+            const dialog = document.getElementById('tutorial-dialog');
+            const msg = document.getElementById('tutorial-msg');
+            const prevBtn = document.getElementById('tutorial-prev-btn');
+            
+            const rect = el.getBoundingClientRect();
+            if(spotlight) {
+                spotlight.style.width = `${rect.width + 16}px`; spotlight.style.height = `${rect.height + 16}px`; spotlight.style.top = `${rect.top - 8 + window.scrollY}px`; spotlight.style.left = `${rect.left - 8 + window.scrollX}px`;
+            }
+            if(msg) msg.innerText = step.msg;
+            
+            if(prevBtn) {
+                if (gameState.tutorialStep > 0) prevBtn.classList.remove('hidden');
+                else prevBtn.classList.add('hidden');
+            }
+
+            if(dialog) {
+                const dialogWidth = 320; const dialogHeight = 220; let top = rect.bottom + 15; let left = rect.left + (rect.width / 2) - (dialogWidth / 2);
+                if (top + dialogHeight > window.innerHeight) top = rect.top - dialogHeight - 15;
+                if (left < 20) left = 20; if (left + dialogWidth > window.innerWidth - 20) left = window.innerWidth - dialogWidth - 20;
+                dialog.style.top = `${top + window.scrollY}px`; dialog.style.left = `${left + window.scrollX}px`;
+            }
+        }
+
+        function nextTutorialStep() {
+            gameState.tutorialStep++;
+            if (gameState.tutorialStep >= tutorialSteps.length) skipTutorial();
+            else showTutorialStep();
+        }
+
+        function prevTutorialStep() {
+            if (gameState.tutorialStep > 0) {
+                gameState.tutorialStep--;
+                showTutorialStep();
+            }
+        }
+
+        function skipTutorial() {
+            document.querySelectorAll('.tutorial-highlight-element').forEach(el => el.classList.remove('tutorial-highlight-element'));
+            const overlay = document.getElementById('tutorial-overlay');
+            if(overlay) overlay.style.display = 'none';
+            localStorage.setItem('pixel_dream_shop_visited_v15', 'true');
+            switchGameMode('shop');
+        }
+
+        // --- Features ---
+        function showShareCard() {
+            const res = gameState.lastResult;
+            if (!res) return;
+            const simg = document.getElementById('share-img');
+            const stitle = document.getElementById('card-title');
+            const sstory = document.getElementById('card-story');
+            const sid = document.getElementById('dream-id');
+            const stag = document.getElementById('card-tag-ui');
+            if(simg) simg.src = res.imageUrl;
+            if(stitle) stitle.innerText = `《${res.title}》`;
+            if(sstory) sstory.innerText = res.quote ? res.quote.replace(/“|”/g, "") : "每一段梦境，都是主理人为您准备的一份小小奇迹。";
+            if(sid) sid.innerText = res.id;
+            if(stag) stag.innerText = res.isWorkshop ? "Personal Collection / 个人手账" : "Customer Order / 暖心委托";
+            const smodal = document.getElementById('share-modal');
+            if(smodal) smodal.classList.remove('hidden');
+        }
+
+        function revisitDream(index) {
+            const res = gameState.pastDreams[index];
+            gameState.lastResult = res;
+            showShareCard();
+        }
+
+    async function fetchImage(prompt) {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent?key=${apiKey}`;
+            const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: `Pixel art style, high quality cozy dreamcore, soft focus, warm nostalgic colors: ${prompt}` }] }], generationConfig: { responseModalities: ['TEXT', 'IMAGE'] } }) });
+            const data = await response.json();
+            return `data:image/png;base64,${data.candidates[0].content.parts.find(p => p.inlineData).inlineData.data}`;
+        }
+
+
+        function toggleEncy() { const m = document.getElementById('ency-modal'); if(m) { m.classList.toggle('hidden'); if(!m.classList.contains('hidden')) renderEncy(); } }
+
+        function renderEncy() {
+            const mc = document.getElementById('modal-crystals'); if(mc) mc.innerText = gameState.crystals;
+            const lv = document.getElementById('library-view');
+            if(lv) {
+                lv.innerHTML = Object.keys(gameState.library).map(w => {
+                    const isU = gameState.unlocked.includes(w);
+                    if(gameState.library[w].isHidden && !isU) return '';
+                    return `<div class="pixel-border p-4 flex flex-col items-center ${isU?'bg-slate-800 border-green-500':'opacity-60'}">
+                        <div class="text-4xl mb-2">${gameState.library[w].icon}</div>
+                        <div class="font-bold text-sm mb-2">${w}</div>
+                        ${isU ? '<span class="text-green-400 text-[10px] font-bold">已拥有</span>' : `<button onclick="buy('${w}')" class="bg-sky-700 text-[10px] px-4 py-1 mt-1 rounded shadow-lg font-bold">💎 ${gameState.library[w].price}</button>`}
+                    </div>`}).join('');
+            }
+        }
+
+        function buy(w) { if(gameState.crystals >= gameState.library[w].price) { gameState.crystals -= gameState.library[w].price; gameState.unlocked.push(w); updateUI(); renderEncy(); } else showToast("梦晶不足！"); }
+
+        function closeLetter() { const m = document.getElementById('letter-modal'); if(m) m.classList.add('hidden'); }
+        function closeShare() { const m = document.getElementById('share-modal'); if(m) m.classList.add('hidden'); }
+        function saveCard() { showToast("已保存这张明信片。"); }
+        function toggleMedalWall() { const m = document.getElementById('medal-modal'); if(m) { m.classList.toggle('hidden'); if (!m.classList.contains('hidden')) renderMedalWall(); } }
+        function renderMedalWall() {
+            const view = document.getElementById('medal-wall-view');
+            if(view) {
+                view.innerHTML = Object.keys(medalDefs).map(key => {
+                    const isUnlocked = gameState.medals[key]; const def = medalDefs[key];
+                    return `<div class="pixel-border p-6 flex flex-col items-center text-center transition-all ${isUnlocked ? 'bg-slate-800 border-indigo-500' : 'opacity-40 grayscale'}"><div class="text-5xl mb-4">${def.icon}</div><h3 class="font-bold text-lg ${isUnlocked ? 'text-indigo-400' : 'text-slate-500'}">${def.name}</h3><p class="text-[10px] mt-2 text-slate-400 italic">${def.condition}</p>${isUnlocked ? `<div class="mt-4 px-3 py-1 bg-indigo-900/50 rounded-full text-[9px] text-indigo-300 font-bold">已点亮</div>` : '<div class="mt-4 text-[9px] text-slate-600 font-bold">尚未达成</div>'}</div>`;
+                }).join('');
+            }
+        }
+
+        function toggleMemoryBox() { const m = document.getElementById('memory-modal'); if(m) { m.classList.toggle('hidden'); if (!m.classList.contains('hidden')) renderMemoryBox(); } }
+        function renderMemoryBox() {
+            const content = document.getElementById('memory-content'); const empty = document.getElementById('memory-empty');
+            if (gameState.pastDreams.length === 0) { if(empty) empty.classList.remove('hidden'); if(content) content.classList.add('hidden'); }
+            else { if(empty) empty.classList.add('hidden'); if(content) { content.classList.remove('hidden'); content.innerHTML = gameState.pastDreams.map((d, i) => `<div class="photo-frame" onclick="revisitDream(${i})">${d.isWorkshop ? '<div class="absolute -top-2 -left-2 bg-indigo-600 text-white text-[8px] px-2 py-0.5 rounded shadow z-10">个人杰作</div>' : ''}<img src="${d.imageUrl}" class="photo-thumb"><div class="text-[8px] text-stone-700 font-bold mt-2 text-center truncate px-1">${d.title}</div></div>`).join(''); } }
+        }
+
+        async function startWeave() {
+            if (gameState.isGenerating) return;
+            const input = document.getElementById('keyword-input'); if(!input) return;
+            const inputVal = input.value.trim(); const words = inputVal.split(/\s+/).filter(w => gameState.unlocked.includes(w));
+            if (words.length === 0) return showToast("需要放入素材！");
+            gameState.isGenerating = true;
+            const weaveBtn = document.getElementById('weave-btn'); const ev = document.getElementById('empty-view'); const lv = document.getElementById('loading-view');
+            if(weaveBtn) weaveBtn.disabled = true; if(ev) ev.classList.add('hidden'); if(lv) lv.classList.remove('hidden');
+            try {
+                const promptPrefix = gameState.gameMode === 'shop' ? `${gameState.currentOrder.name}'s dream:` : `A creative vision:`;
+                const url = await fetchImage(`Pixel art of ${promptPrefix} ${words.join(', ')}.`);
+                const dimg = document.getElementById('dream-img');
+                if(dimg) { dimg.src = url; dimg.onload = () => { if(lv) lv.classList.add('hidden'); dimg.classList.remove('hidden'); calculateAIScore(words); }; }
+            } catch(e) { 
+                // 保底逻辑：API 失败时进入离线演示模式
+                showToast("梦境能量波动，开启预设幻境...");
+                calculateStaticScore(words); 
+            }
+            finally { gameState.isGenerating = false; if(weaveBtn) weaveBtn.disabled = false; }
+        }
+
+        function showMedalUnlockAnimation(medalId) {
+            const medal = medalDefs[medalId]; const mui = document.getElementById('medal-unlock-icon'); const mun = document.getElementById('medal-unlock-name'); const mur = document.getElementById('medal-unlock-reward'); const muc = document.getElementById('medal-unlock-container');
+            if(mui) mui.innerText = medal.icon; if(mun) mun.innerText = medal.name; if(mur) mur.innerText = medal.reward; if(muc) muc.classList.add('show');
+        }
+
+        function dismissMedal() { const muc = document.getElementById('medal-unlock-container'); if(muc) muc.classList.remove('show'); const rv = document.getElementById('report-view'); if(rv) { rv.classList.remove('hidden'); rv.classList.add('flex'); } }
+
+        function calculateStaticScore(userWords) { 
+    console.log("正在启动保底逻辑，手动填入文案...");
+    gameState.crystals += 70; 
+    
+    // 1. 定义要显示的文字内容
+    const safeTitle = "月光下的绸缎";
+    const safeFeedback = "“谢谢你...我感觉那些焦虑的褶皱真的被抚平了，就像月光洒在海面上一样平静。”";
+    const safeNote = "我在这份梦境里加入了一丝治愈的微风。即便信标微弱，这份宁静也希望能传达给你。";
+
+    gameState.lastResult = { 
+        imageUrl: "https://picsum.photos/800/800?grayscale", 
+        title: safeTitle, 
+        quote: safeFeedback, 
+        note: safeNote, 
+        score: 70, 
+        id: 9999, 
+        timestamp: Date.now() 
+    }; 
+    
+    // 2. 【核心修复】这几行是关键！它们负责把上面的字“写”到网页上
+    const reportTitle = document.getElementById('report-dream-title');
+    const customerStory = document.getElementById('customer-story');
+    const managerNote = document.getElementById('manager-note');
+    const cfBox = document.getElementById('customer-feedback-box');
+
+    if (reportTitle) reportTitle.innerText = `《${safeTitle}》`;
+    if (customerStory) customerStory.innerText = safeFeedback;
+    if (managerNote) managerNote.innerText = safeNote;
+    if (cfBox) cfBox.classList.remove('hidden'); // 确保反馈框是不隐藏的
+
+    // 3. 把数据存入后台
+    gameState.pastDreams.unshift({...gameState.lastResult}); 
+    updateUI(); 
+    
+    // 4. 让整个报告面板显示出来
+    const rv = document.getElementById('report-view'); 
+    if(rv) { 
+        rv.classList.remove('hidden'); 
+        rv.classList.add('flex'); 
+    } 
+    console.log("保底界面已完成文字填入并弹出");
+}
+
+        function showOrderLetter() {
+            if (!gameState.currentOrder) return;
+            const lb = document.getElementById('letter-body'); const ls = document.getElementById('letter-sender'); const lm = document.getElementById('letter-modal');
+            if(lb) lb.innerText = gameState.currentOrder.text; if(ls) ls.innerText = gameState.currentOrder.name; if(lm) lm.classList.remove('hidden');
+            gameState.orderIsRead = true; updateUI();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const ki = document.getElementById('keyword-input');
+            if(ki) { ki.addEventListener('input', (e) => { const si = document.getElementById('slot-indicator'); if(si) si.innerText = e.target.value.trim() === "" ? 0 : e.target.value.trim().split(/\s+/).length; }); }
+            checkIntro();
+            // 激活图标库驱动
+            if(window.lucide) lucide.createIcons();
+        });
+
+        window.addEventListener('resize', () => { const overlay = document.getElementById('tutorial-overlay'); if (overlay && overlay.style.display === 'block') showTutorialStep(); });
+    </script>
+</body>
+</html>
